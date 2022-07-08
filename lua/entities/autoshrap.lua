@@ -17,7 +17,7 @@ if SERVER then
         self:SetMoveType( MOVETYPE_VPHYSICS )
         self:SetSolid( SOLID_VPHYSICS )
         self:DrawShadow( false )
-        self.Entity:SetTrigger( true )
+        self:SetTrigger( true )
         self:SetCollisionGroup( COLLISION_GROUP_WEAPON )
         self:SetColor( Color( 255, 255, 255, 255 ) )
         self:SetMaterial( "models/props_vents/borealis_vent001c" )
@@ -46,8 +46,6 @@ function ENT:Draw()
     self:DrawModel()
 
     if self:GetSkin() == 1 then
-        local ent = self
-
         local tr = util.TraceHull( {
             start = self:GetPos(),
             endpos = self:GetPos() + self:GetUp() * 3000,
@@ -66,62 +64,65 @@ end
 
 function ENT:Explode( hitty )
     if self.primed and not self.exploded then
+        local owner = self:GetOwner()
+        local pos = self:GetPos()
+        local up = self:GetUp()
+
         self.exploded = true
         self.primed = false
         self:SetSkin( 0 )
         self:GetPhysicsObject():EnableMotion( true )
         self:GetPhysicsObject():Wake()
+
         local eff = EffectData()
-        eff:SetOrigin( self:GetPos() + self:GetUp() * 5 )
+        eff:SetOrigin( pos + up * 5 )
         eff:SetScale( 0.5 )
         eff:SetRadius( 3 )
-        eff:SetNormal( self:GetUp() )
-        eff:SetStart( self:GetPos() + self:GetUp() * 5 )
+        eff:SetNormal( up )
+        eff:SetStart( pos + up * 5 )
         eff:SetMagnitude( 1 )
         util.Effect( "polybewm", eff )
 
-        if IsValid( self.Owner ) then
-            util.BlastDamage( self, self.Owner, self:GetPos(), 50 + self.defused, 200 + self.defused * 2 )
+        if IsValid( owner ) then
+            util.BlastDamage( self, owner, pos, 50 + self.defused, 200 + self.defused * 2 )
         else
-            util.BlastDamage( self, self, self:GetPos(), 50 + self.defused, 200 + self.defused * 2 )
+            util.BlastDamage( self, self, pos, 50 + self.defused, 200 + self.defused * 2 )
         end
 
         local bullet = {}
 
-        if IsValid( self.Owner ) then
-            bullet.Attacker = self.Owner
+        if IsValid( owner ) then
+            bullet.Attacker = owner
         else
             bullet.Attacker = self
         end
 
         bullet.Num = 60
-        bullet.Src = self:GetPos()
-        bullet.Dir = self:GetUp()
+        bullet.Src = pos
+        bullet.Dir = up
         bullet.Spread = Vector( 0.15, 0.15, 0 )
         bullet.TracerName = "Tracer"
         bullet.Force = 5 * 0.5
         bullet.Damage = 10
         self:FireBullets( bullet )
 
-        if IsValid( self.Owner ) then
-            bullet.Attacker = self.Owner
+        if IsValid( owner ) then
+            bullet.Attacker = owner
         else
             bullet.Attacker = self
         end
 
         bullet.Num = 20
-        bullet.Src = self:GetPos()
-        bullet.Dir = self:GetUp()
+        bullet.Src = pos
+        bullet.Dir = up
         bullet.Spread = Vector( 0.03, 0.03, 0 )
         bullet.TracerName = "Tracer"
         bullet.Force = 5 * 0.5
         bullet.Damage = 10
         self:FireBullets( bullet )
 
-        if IsValid( hitty ) then
-            if self:Visible( hitty ) then
-                hitty:TakeDamage( 0.5 + ( 2000 - hitty:GetPos():Distance( self:GetPos() ) ) * 0.015, self, DMG_BUCKSHOT )
-            end
+        if IsValid( hitty ) and self:Visible( hitty ) then
+            hitty:TakeDamage( 0.5 + ( 2000 - hitty:GetPos():Distance( pos ) ) * 0.015, self, DMG_BUCKSHOT )
         end
 
         SafeRemoveEntityDelayed( self, 0.4 )
@@ -130,9 +131,12 @@ end
 
 function ENT:Think()
     if self.primed or self:GetVar( "Primed" ) then
+        local pos = self:GetPos()
+        local up = self:GetUp()
+
         local tr = util.TraceHull( {
-            start = self:GetPos(),
-            endpos = self:GetPos() + self:GetUp() * 3000,
+            start = pos,
+            endpos = pos + up * 3000,
             maxs = 3,
             mins = 3,
             filter = self
@@ -147,16 +151,12 @@ function ENT:Think()
             self:EmitSound( "ambient/tones/equip2.wav", 60, 150 )
         end
 
-        if self.defused > 0 then
-            if self.DefuseTimer ~= nil then
-                if self.DefuseTimer < CurTime() then
-                    if self.defused > 24 then
-                        self:Explode()
-                    else
-                        self.defused = 0
-                        self:EmitSound( "Buttons.snd16" )
-                    end
-                end
+        if self.defused > 0 and self.DefuseTimer ~= nil then
+            if self.DefuseTimer < CurTime() and self.defused > 24 then
+                self:Explode()
+            else
+                self.defused = 0
+                self:EmitSound( "Buttons.snd16" )
             end
         end
 
@@ -172,7 +172,6 @@ function ENT:Use( user )
     end
 
     if user:IsPlayer() and self.UseTimer < CurTime() then
-        targetguy = user
         self.UseTimer = CurTime() + 2.5
 
         if self.primed ~= true then
@@ -251,7 +250,7 @@ function ENT:Use( user )
     end
 end
 
-function ENT:Touch( entity )
+function ENT:Touch()
     if not constraint.FindConstraint( self, "Weld" ) then
         self.primed = false
         self:SetSkin( 0 )

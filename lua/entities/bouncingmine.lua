@@ -17,7 +17,7 @@ if SERVER then
         self:SetMoveType( MOVETYPE_VPHYSICS )
         self:SetSolid( SOLID_VPHYSICS )
         self:DrawShadow( false )
-        self.Entity:SetTrigger( true )
+        self:SetTrigger( true )
         self:SetCollisionGroup( COLLISION_GROUP_WEAPON )
         self:SetColor( Color( 255, 255, 255, 255 ) )
         self.UseTimer = CurTime()
@@ -47,8 +47,9 @@ function ENT:Explode()
 
         timer.Simple( 0.2, function()
             if IsValid( self ) then
-                if IsValid( self.Owner ) then
-                    util.BlastDamage( self, self.Owner, self:GetPos(), 30 + self.defused, 200 + self.defused * 2 )
+                local owner = self:GetOwner()
+                if IsValid( owner ) then
+                    util.BlastDamage( self, owner, self:GetPos(), 30 + self.defused, 200 + self.defused * 2 )
                 else
                     util.BlastDamage( self, self, self:GetPos(), 30 + self.defused, 200 + self.defused * 2 )
                 end
@@ -91,13 +92,12 @@ function ENT:Pellets( ent )
         bullet.Damage = 2
         self:FireBullets( bullet )
 
-        if ent:IsPlayer() or ent:IsNPC() then
-            if self:Visible( ent ) then
-                if IsValid( self.Owner ) then
-                    ent:TakeDamage( 0.5 + ( 801 - ent:GetPos():Distance( self:GetPos() ) ) * 0.0085, self.Owner, DMG_BUCKSHOT )
-                else
-                    ent:TakeDamage( 0.5 + ( 801 - ent:GetPos():Distance( self:GetPos() ) ) * 0.0085, self, DMG_BUCKSHOT )
-                end
+        if ( ent:IsPlayer() or ent:IsNPC() ) and self:Visible( ent ) then
+            local owner = self:GetOwner()
+            if IsValid( owner ) then
+                ent:TakeDamage( 0.5 + ( 801 - ent:GetPos():Distance( self:GetPos() ) ) * 0.0085, owner, DMG_BUCKSHOT )
+            else
+                ent:TakeDamage( 0.5 + ( 801 - ent:GetPos():Distance( self:GetPos() ) ) * 0.0085, self, DMG_BUCKSHOT )
             end
         end
     end
@@ -109,15 +109,11 @@ function ENT:Think()
     end
 
     if self.primed and self.defused > 0 then
-        if self.DefuseTimer ~= nil then
-            if self.DefuseTimer < CurTime() then
-                if self.defused > 29 then
-                    self:Explode()
-                else
-                    self.defused = 0
-                    self:EmitSound( "Buttons.snd16" )
-                end
-            end
+        if self.DefuseTimer ~= nil and self.DefuseTimer < CurTime() and self.defused > 29 then
+            self:Explode()
+        else
+            self.defused = 0
+            self:EmitSound( "Buttons.snd16" )
         end
     end
 
@@ -132,7 +128,6 @@ function ENT:Use( user )
     end
 
     if user:IsPlayer() and self.UseTimer < CurTime() then
-        targetguy = user
         self.UseTimer = CurTime() + 2.5
 
         if self.primed ~= true then
@@ -207,7 +202,7 @@ function ENT:Use( user )
     end
 end
 
-function ENT:Touch( entity )
+function ENT:Touch()
     if not constraint.FindConstraint( self, "Weld" ) then
         self.primed = false
     else

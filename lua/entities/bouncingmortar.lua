@@ -19,16 +19,18 @@ if SERVER then
         self:SetSolid( SOLID_VPHYSICS )
         self:DrawShadow( false )
         self:SetCollisionGroup( COLLISION_GROUP_DEBRIS )
-        self.Entity:SetTrigger( true )
+        self:SetTrigger( true )
         self.UseTimer = CurTime()
         self.defused = 0
         self.fuse = ents.Create( "prop_physics" )
         self.fuse:SetModel( "models/props_canal/mattpipe.mdl" )
         self.fuse:SetMaterial( "models/props_vents/borealis_vent001c" )
+
         local pos, ang = self:GetPos(), self:GetAngles()
         pos = pos + ang:Up() * 6
         pos = pos + ang:Right() * 0
         pos = pos + ang:Forward() * -3
+
         self.fuse:SetPos( pos )
         self.fuse:SetAngles( ang )
         self.fuse:SetSolid( 0 )
@@ -76,8 +78,9 @@ function ENT:Explode()
 
         timer.Simple( 0.15, function()
             if IsValid( self ) then
-                if IsValid( self.Owner ) then
-                    util.BlastDamage( self, self.Owner, self:GetPos(), 30 + self.defused, 120 + self.defused * 2 )
+                local owner = self:GetOwner()
+                if IsValid( owner ) then
+                    util.BlastDamage( self, owner, self:GetPos(), 30 + self.defused, 120 + self.defused * 2 )
                 else
                     util.BlastDamage( self, self, self:GetPos(), 30 + self.defused, 120 + self.defused * 2 )
                 end
@@ -94,7 +97,7 @@ function ENT:Explode()
 
                 timer.Simple( 0.05, function()
                     for i = 0, 15 do
-                        for k, v in pairs( ents.FindInSphere( self:GetPos(), 500 ) ) do
+                        for _, v in pairs( ents.FindInSphere( self:GetPos(), 500 ) ) do
                             if IsValid( v ) then
                                 self:Pellets( v )
                             end
@@ -118,16 +121,14 @@ function ENT:Explode()
 end
 
 function ENT:Pellets( ent )
-    if IsValid( ent ) then
-        if ent:IsPlayer() or ent:IsNPC() then
-            if self:Visible( ent ) then
-                if IsValid( self.Owner ) then
-                    ent:TakeDamage( 0.5 + ( 500 - ent:GetPos():Distance( self:GetPos() ) ) * 0.0085, self.Owner, DMG_BUCKSHOT )
-                else
-                    ent:TakeDamage( 0.5 + ( 500 - ent:GetPos():Distance( self:GetPos() ) ) * 0.0085, self, DMG_BUCKSHOT )
-                end
-            end
-        end
+    if not IsValid( ent ) then return end
+    if not ( ent:IsPlayer() or ent:IsNPC() ) then return end
+
+    local owner = self:GetOwner()
+    if self:Visible( ent ) and IsValid( owner ) then
+        ent:TakeDamage( 0.5 + ( 500 - ent:GetPos():Distance( self:GetPos() ) ) * 0.0085, owner, DMG_BUCKSHOT )
+    else
+        ent:TakeDamage( 0.5 + ( 500 - ent:GetPos():Distance( self:GetPos() ) ) * 0.0085, self, DMG_BUCKSHOT )
     end
 end
 
@@ -160,7 +161,6 @@ function ENT:Use( user )
     end
 
     if user:IsPlayer() and self.UseTimer < CurTime() then
-        targetguy = user
         self.UseTimer = CurTime() + 2.5
 
         if self.primed ~= true then
