@@ -162,10 +162,10 @@ function ENT:Use( user )
                 end
             end
         else
-            print( "apply" )
+            --print( "apply" )
             self.stick = constraint.FindConstraint( self, "Rope" ).Ent2
             self.ropey = constraint.Find( self, self.stick, "Rope", 0, 0 )
-            print( IsValid( self.ropey ) )
+            --print( IsValid( self.ropey ) )
             self.primed = true
         end
 
