@@ -39,10 +39,6 @@ function SWEP:Grenade( ply )
     if SERVER then
         if not IsValid( self.Owner ) then return end
 
-        local grenadeang
-        local grenadepos
-        local stickpos
-        local stickang
         local owner = self:GetOwner()
 
         if not IsValid( self.c_Model2 ) then
@@ -61,12 +57,12 @@ function SWEP:Grenade( ply )
                     local tr_ent = util.TraceEntity( trace, self.c_Model )
 
                     if tr_ent.HitWorld then
-                        grenadeang = tr_ent.HitNormal:Angle()
+                        self.grenadeang = tr_ent.HitNormal:Angle()
                         grenadeang.p = grenadeang.p + 90
-                        grenadepos = tr_ent.HitPos + tr_ent.HitNormal * -0.2
+                        self.grenadepos = tr_ent.HitPos + tr_ent.HitNormal * -0.2
                         self.c_Model = ents.Create( "prop_physics" )
                         self.c_Model:SetPos( grenadepos )
-                        self.c_Model:SetAngles( grenadeang )
+                        self.c_Model:SetAngles( self.grenadeang )
                         self.c_Model:SetModel( "models/weapons/w_eq_fraggrenade.mdl" )
                         self.c_Model:PhysicsInit( SOLID_NONE )
                         self.c_Model:SetMoveType( MOVETYPE_NONE )
@@ -83,7 +79,7 @@ function SWEP:Grenade( ply )
                     local tr_ent = util.TraceEntity( trace, self.c_Model2 )
 
                     if tr_ent.HitWorld then
-                        if grenadepos:Distance( tr.HitPos ) < 190 then
+                        if self.grenadepos:Distance( tr.HitPos ) < 190 then
                             stickang = tr_ent.HitNormal:Angle()
                             stickang.r = stickang.r + 90
                             stickang.p = stickang.p + 90
@@ -108,11 +104,11 @@ function SWEP:Grenade( ply )
             end
         else
             local grenade = ents.Create( "tripwiregrenade" )
-            grenade:SetPos( grenadepos )
+            grenade:SetPos( self.grenadepos )
             grenade:SetVar( "Placed", 1 )
             grenade.stickpos = stickpos
             grenade.stickang = stickang
-            grenade:SetAngles( grenadeang )
+            grenade:SetAngles( self.grenadeang )
             grenade:Spawn()
             constraint.Weld( grenade, game.GetWorld(), 0, 0, 0, 0, 0 )
             self:EmitSound( "buttons/lever8.wav" )
