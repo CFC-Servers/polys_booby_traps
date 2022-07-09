@@ -61,7 +61,7 @@ function SWEP:Grenade( ply )
                         grenadeang.p = grenadeang.p + 90
                         self.grenadepos = tr_ent.HitPos + tr_ent.HitNormal * -0.2
                         self.c_Model = ents.Create( "prop_physics" )
-                        self.c_Model:SetPos( grenadepos )
+                        self.c_Model:SetPos( self.grenadepos )
                         self.c_Model:SetAngles( self.grenadeang )
                         self.c_Model:SetModel( "models/weapons/w_eq_fraggrenade.mdl" )
                         self.c_Model:PhysicsInit( SOLID_NONE )
@@ -80,11 +80,11 @@ function SWEP:Grenade( ply )
 
                     if tr_ent.HitWorld then
                         if self.grenadepos:Distance( tr.HitPos ) < 190 then
-                            stickang = tr_ent.HitNormal:Angle()
-                            stickang.r = stickang.r + 90
-                            stickang.p = stickang.p + 90
-                            stickpos = tr_ent.HitPos + tr_ent.HitNormal * 3
-                            self.c_Model2:SetPos( stickpos )
+                            self.stickang = tr_ent.HitNormal:Angle()
+                            self.stickang.r = self.stickang.r + 90
+                            self.stickang.p = self.stickang.p + 90
+                            self.stickpos = tr_ent.HitPos + tr_ent.HitNormal * 3
+                            self.c_Model2:SetPos( self.stickpos )
                             self.c_Model2:SetAngles( stickang )
                             self.c_Model2:SetModel( "models/props_c17/TrapPropeller_Lever.mdl" )
                             self.c_Model2:PhysicsInit( SOLID_NONE )
@@ -106,8 +106,8 @@ function SWEP:Grenade( ply )
             local grenade = ents.Create( "tripwiregrenade" )
             grenade:SetPos( self.grenadepos )
             grenade:SetVar( "Placed", 1 )
-            grenade.stickpos = stickpos
-            grenade.stickang = stickang
+            grenade.stickpos = self.stickpos
+            grenade.stickang = self.stickang
             grenade:SetAngles( self.grenadeang )
             grenade:Spawn()
             constraint.Weld( grenade, game.GetWorld(), 0, 0, 0, 0, 0 )
